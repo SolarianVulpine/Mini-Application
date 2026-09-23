@@ -4,6 +4,8 @@ import { Menu, Moon, ShoppingCart, Sun, X } from "lucide-react";
 
 import { useCartStore } from "@/stores/cart-store";
 import { useThemeStore } from "@/stores/theme-store";
+import { useAuthStore } from "@/stores/auth-store";
+import { LogoutButton } from "@/components/authentication/LogoutButton";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/shared/SearchBar";
@@ -17,6 +19,7 @@ const links = [
 function Navbar() {
         const [isMenuOpen, setIsMenuOpen] = useState(false);
         const { theme, toggleTheme } = useThemeStore();
+        const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
         const itemCount = useCartStore((state) => state.getItemCount());
 
         useEffect(() => {
@@ -50,6 +53,10 @@ function Navbar() {
                                 </nav>
 
                                 <div className="hidden items-center gap-2 md:flex">
+                                        <NavLink to={isAuthenticated ? "/queue" : "/login"} className="rounded-md px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                                                {isAuthenticated ? "Queue" : "Worker access"}
+                                        </NavLink>
+                                        {isAuthenticated && <LogoutButton />}
                                         <SearchBar />
                                         <Button
                                                 aria-label={`Cart with ${itemCount} items`}
@@ -108,6 +115,10 @@ function Navbar() {
                                                         </NavLink>
                                                 ))}
                                                 <SearchBar mobile onSubmit={closeMenu} />
+                                                <NavLink to={isAuthenticated ? "/queue" : "/login"} onClick={closeMenu} className="rounded-md px-3 py-2 text-sm font-medium hover:bg-accent">
+                                                        {isAuthenticated ? "Worker queue" : "Worker access"}
+                                                </NavLink>
+                                                {isAuthenticated && <LogoutButton />}
                                                 <NavLink to="/cart" onClick={closeMenu} className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent">
                                                         <ShoppingCart className="size-4" />
                                                         Cart ({itemCount})
