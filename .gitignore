@@ -44,3 +44,5 @@ Thumbs.db
 _pgbackup/
 _pginfo/
 pinegrow.json
+
+plan.md
