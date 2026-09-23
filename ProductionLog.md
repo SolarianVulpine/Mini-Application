@@ -13,11 +13,12 @@ App will be the queue for previous project's custom products
 
 ## 2. Reconcile the Product Vision with the Exercise Requirements
 
-- [ ] Keep the existing workshop storefront, dynamic light/dark theme, and `workshop.jpg` hero image
+- [x] Keep the existing workshop storefront, dynamic light/dark theme, and `workshop.jpg` hero image
 - [ ] Define the authenticated queue as the worker-only workflow, replacing the README's generic todo list with workshop order items.
 - [ ] Map the README deliverables to the queue: React Query for server state, MSW for API behavior, Vitest and Testing Library for coverage, and Tailwind CSS for responsive styling.
 - [x] Keep Home, About, Cart, and Products public; restrict only the queue route to authenticated workshop workers.
 - [x] Scaffold files and directories
+- [x] Add dependencies and packages
 
 ## 3. Establish the Queue Data Contract
 
