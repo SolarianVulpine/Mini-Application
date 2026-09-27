@@ -1,90 +1,46 @@
-import { queueSeed } from "@/data/queue-seed";
 import type { QueueInput, QueueItem, QueueResponse, QueueStatus } from "@/types/queue";
 
-const queueStorageKey = "workshop-queue";
+const queueEndpoint = "/api/queue";
 
-function isQueueItem(value: unknown): value is QueueItem {
-        if (!value || typeof value !== "object") return false;
-
-        const item = value as Partial<QueueItem>;
-        return (
-                typeof item.id === "string" &&
-                typeof item.title === "string" &&
-                typeof item.description === "string" &&
-                typeof item.createdAt === "string" &&
-                (item.status === "queued" || item.status === "in-progress" || item.status === "completed")
-        );
-}
-
-function readQueue(): QueueItem[] {
-        if (typeof window === "undefined") return [...queueSeed];
-
-        try {
-                const stored = JSON.parse(window.localStorage.getItem(queueStorageKey) ?? "null");
-                return Array.isArray(stored) && stored.every(isQueueItem) ? stored : [...queueSeed];
-        } catch {
-                return [...queueSeed];
+async function request<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+        const response = await fetch(input, init);
+        if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || `Queue request failed with status ${response.status}`);
         }
+        if (response.status === 204) return undefined as T;
+        return response.json() as Promise<T>;
 }
-
-function saveQueue(items: QueueItem[]) {
-        if (typeof window !== "undefined") {
-                window.localStorage.setItem(queueStorageKey, JSON.stringify(items));
-        }
-}
-
-let queueItems = readQueue();
 
 export async function fetchQueue(page = 1, pageSize = 6): Promise<QueueResponse> {
-        const start = (page - 1) * pageSize;
-        const items = queueItems.slice(start, start + pageSize);
-
-        return {
-                items,
-                page,
-                pageSize,
-                total: queueItems.length,
-                hasNextPage: start + pageSize < queueItems.length,
-        };
+        const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+        return request<QueueResponse>(`${queueEndpoint}?${params}`);
 }
 
 export async function createQueueItem(input: QueueInput): Promise<QueueItem> {
-        const item: QueueItem = {
-                ...input,
-                id: `order-${Date.now()}`,
-                status: "queued",
-                createdAt: new Date().toISOString().slice(0, 10),
-        };
-        queueItems = [item, ...queueItems];
-        saveQueue(queueItems);
-        return item;
+        return request<QueueItem>(queueEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(input),
+        });
 }
 
 export async function updateQueueItem(id: string, input: QueueInput): Promise<QueueItem> {
-        const existing = queueItems.find((item) => item.id === id);
-        if (!existing) throw new Error("Queue item not found");
-
-        const updated = { ...existing, ...input };
-        queueItems = queueItems.map((item) => (item.id === id ? updated : item));
-        saveQueue(queueItems);
-        return updated;
+        return request<QueueItem>(`${queueEndpoint}/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(input),
+        });
 }
 
 export async function updateQueueStatus(id: string, status: QueueStatus): Promise<QueueItem> {
-        const existing = queueItems.find((item) => item.id === id);
-        if (!existing) throw new Error("Queue item not found");
-
-        const updated = {
-                ...existing,
-                status,
-                completedAt: status === "completed" ? new Date().toISOString().slice(0, 10) : undefined,
-        };
-        queueItems = queueItems.map((item) => (item.id === id ? updated : item));
-        saveQueue(queueItems);
-        return updated;
+        return request<QueueItem>(`${queueEndpoint}/${id}/status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+        });
 }
 
 export async function deleteQueueItem(id: string): Promise<void> {
-        queueItems = queueItems.filter((item) => item.id !== id);
-        saveQueue(queueItems);
+        await request<void>(`${queueEndpoint}/${id}`, { method: "DELETE" });
 }
