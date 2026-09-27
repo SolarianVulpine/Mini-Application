@@ -30,8 +30,12 @@ function missingQueueItem() {
         return HttpResponse.json({ message: "Queue item not found" }, { status: 404 });
 }
 
+function queueId(request: Request) {
+        return new URL(request.url).pathname.split("/")[3] ?? "";
+}
+
 export const handlers = [
-        http.get("/api/queue", ({ request }) => {
+        http.get(/\/api\/queue$/, ({ request }) => {
                 const url = new URL(request.url);
                 const page = Number(url.searchParams.get("page") ?? 1);
                 const pageSize = Number(url.searchParams.get("pageSize") ?? 6);
@@ -45,7 +49,7 @@ export const handlers = [
                         hasNextPage: start + pageSize < queueItems.length,
                 });
         }),
-        http.post("/api/queue", async ({ request }) => {
+        http.post(/\/api\/queue$/, async ({ request }) => {
                 const input = (await request.json()) as QueueInput;
                 const item: QueueItem = {
                         ...input,
@@ -57,8 +61,8 @@ export const handlers = [
                 saveQueue(queueItems);
                 return HttpResponse.json(item, { status: 201 });
         }),
-        http.patch("/api/queue/:id/status", async ({ params, request }) => {
-                const item = findQueueItem(String(params.id));
+        http.patch(/\/api\/queue\/[^/]+\/status$/, async ({ request }) => {
+                const item = findQueueItem(queueId(request));
                 if (!item) return missingQueueItem();
 
                 const { status } = (await request.json()) as { status: QueueStatus };
@@ -71,8 +75,8 @@ export const handlers = [
                 saveQueue(queueItems);
                 return HttpResponse.json(updated);
         }),
-        http.patch("/api/queue/:id", async ({ params, request }) => {
-                const item = findQueueItem(String(params.id));
+        http.patch(/\/api\/queue\/[^/]+$/, async ({ request }) => {
+                const item = findQueueItem(queueId(request));
                 if (!item) return missingQueueItem();
 
                 const input = (await request.json()) as QueueInput;
@@ -81,10 +85,11 @@ export const handlers = [
                 saveQueue(queueItems);
                 return HttpResponse.json(updated);
         }),
-        http.delete("/api/queue/:id", ({ params }) => {
-                if (!findQueueItem(String(params.id))) return missingQueueItem();
+        http.delete(/\/api\/queue\/[^/]+$/, ({ request }) => {
+                const id = queueId(request);
+                if (!findQueueItem(id)) return missingQueueItem();
 
-                queueItems = queueItems.filter((item) => item.id !== params.id);
+                queueItems = queueItems.filter((item) => item.id !== id);
                 saveQueue(queueItems);
                 return new HttpResponse(null, { status: 204 });
         }),

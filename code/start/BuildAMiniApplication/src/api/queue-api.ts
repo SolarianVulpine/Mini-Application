@@ -1,6 +1,6 @@
 import type { QueueInput, QueueItem, QueueResponse, QueueStatus } from "@/types/queue";
 
-const queueEndpoint = "/api/queue";
+const queueEndpoint = typeof window === "undefined" ? "http://localhost/api/queue" : "/api/queue";
 
 async function request<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
         const response = await fetch(input, init);
