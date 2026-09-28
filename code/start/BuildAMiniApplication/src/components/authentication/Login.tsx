@@ -15,14 +15,21 @@ export function Login() {
         const [email, setEmail] = useState("worker@workshop.local");
         const [password, setPassword] = useState("workshop");
         const [error, setError] = useState("");
+        const [isSubmitting, setIsSubmitting] = useState(false);
         const destination = (location.state as { from?: string } | null)?.from ?? "/queue";
 
-        function handleSubmit(event: FormEvent<HTMLFormElement>) {
+        async function handleSubmit(event: FormEvent<HTMLFormElement>) {
                 event.preventDefault();
-                if (!login(email, password)) {
+                setError("");
+                setIsSubmitting(true);
+                try {
+                        await login(email, password);
+                } catch {
                         setError("Those credentials do not match the workshop ledger.");
+                        setIsSubmitting(false);
                         return;
                 }
+                setIsSubmitting(false);
                 navigate(destination, { replace: true });
         }
 
@@ -49,7 +56,7 @@ export function Login() {
                                                 <div className="space-y-2"><Label htmlFor="worker-password">Password</Label><Input id="worker-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} required /></div>
                                         </div>
                                         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-                                        <Button type="submit" className="w-full">Enter the queue <ArrowRight /></Button>
+                                        <Button type="submit" className="w-full" disabled={isSubmitting}>{isSubmitting ? "Checking the ledger..." : "Enter the queue"} <ArrowRight /></Button>
                                         <p className="text-center text-sm text-muted-foreground"><Link className="underline underline-offset-4 hover:text-foreground" to="/">Return to the storefront</Link></p>
                                         <p className="rounded-md bg-muted p-3 text-xs text-muted-foreground">Demo worker: `worker@workshop.local` / `workshop`</p>
                                 </form>

@@ -1,6 +1,7 @@
 import { http, HttpResponse } from "msw";
 
 import { queueSeed } from "@/data/queue-seed";
+import type { Worker } from "@/types/auth";
 import type { QueueInput, QueueItem, QueueStatus } from "@/types/queue";
 
 const queueStorageKey = "workshop-queue";
@@ -35,6 +36,15 @@ function queueId(request: Request) {
 }
 
 export const handlers = [
+        http.post(/\/api\/auth\/login$/, async ({ request }) => {
+                const { email, password } = (await request.json()) as { email: string; password: string };
+                if (email.trim().toLowerCase() !== "worker@workshop.local" || password !== "workshop") {
+                        return HttpResponse.json({ message: "Invalid worker credentials" }, { status: 401 });
+                }
+
+                const worker: Worker = { email: "worker@workshop.local", name: "Workshop worker" };
+                return HttpResponse.json(worker);
+        }),
         http.get(/\/api\/queue$/, ({ request }) => {
                 const url = new URL(request.url);
                 const page = Number(url.searchParams.get("page") ?? 1);
